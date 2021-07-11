@@ -111,6 +111,13 @@ func processTermboxEvents(s *sheet.Sheet) {
 						smode = PUT_MODE
 					case 'f':
 						smode = FORMAT_MODE
+					case 'W':
+						err := display.Export("/tmp/hello")
+						if err != nil {
+							prompt = err.Error()
+						} else {
+							prompt = "successfully exported"
+						}
 					}
 				}
 			case INSERT_MODE:
