@@ -27,13 +27,15 @@ func (s *Sheet) display() {
 
 	selectedRow, selectedCol := s.SelectedCell.RowCol()
 
-	// Column Headers
+	// Intersect of Col & Row Header
 	rowStr := fmt.Sprintf("%3d", s.startRow+displayHeight)
 	x := 0
 	for x <= len(rowStr) {
 		termbox.SetCell(x, DISPLAY_SHEET_START_ROW, ' ', termbox.ColorWhite, termbox.ColorWhite)
 		x++
 	}
+
+	// Col Header (A-...)
 	startDispColumn := x
 	displayColumns := 0
 	columnAddr := NewAddress(0, s.startCol)
@@ -44,6 +46,7 @@ func (s *Sheet) display() {
 		displayColumns = column - s.startCol + 1
 	}
 
+	// Row Header (0-...)
 	displayRows := 0
 	y := DISPLAY_SHEET_START_ROW + 1
 	for row := s.startRow; y < displayHeight; y++ {
@@ -53,11 +56,11 @@ func (s *Sheet) display() {
 		row++
 	}
 
-	termCol := startDispColumn
+	termCol := startDispColumn // current column in terminal
 	for column := 0; column < displayColumns; column++ {
-		valCol := column + s.startCol
-		for row := 0; row < displayRows; row++ {
-			valRow := row + s.startRow
+		valCol := column + s.startCol            // column in sheet
+		for row := 0; row < displayRows; row++ { // row in terminal
+			valRow := row + s.startRow // row in sheet
 			address := NewAddress(valRow, valCol)
 			if cell, err := s.GetCell(address); err == nil {
 				cell.display(s, address, row+DISPLAY_SHEET_START_ROW+1, termCol, termCol+s.getColumnWidth(address.ColumnHeader()), s.SelectedCell == address)
