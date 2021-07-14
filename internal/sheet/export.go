@@ -47,32 +47,35 @@ func (s *Sheet) Export(path string) error {
 	return out.Flush()
 }
 
+func alignText(str string, a Align, w width) string {
+	if len(t) >= w {
+		return text[:w]
+	}
+	extra := w - len(c.value)
+	
+	switch c.alignment {
+	case align.AlignLeft:
+		return text + spaces(extra)
+	case align.AlignRight:
+		return spaces(extra) + text
+	case align.AlignCenter:
+		fallthrough
+	default:
+		l := math.Ceil(extra / 2.0)
+		r := math.Floor(extra / 2.0)
+		return spaces(l) + text + spaces(r)
+	}
+}
+
 func (s *Sheet) exportCell(c *Cell, a Address) string {
 	w := getColumnWidth(a.ColumnHeader())
 	if c == nil {
 		return spaces(w)
-	} else if c.stringType {
-		text := c.value
-		if len(c.value) >= w {
-			return text[:w]
-		}
-		
-		extra := w - len(c.value)
-		
-		switch c.alignment {
-		case align.AlignLeft:
-			return text + spaces(extra)
-		case align.AlignRight:
-			return spaces(extra) + text
-		case align.AlignCenter:
-			fallthrough
-		default:
-			l := math.Ceil(extra / 2.0)
-			r := math.Floor(extra / 2.0)
-			return spaces(l) + text + spaces(r)
-		}
+	} else i c.stringType {
+		return alignText(c.value, c.alignment, w)
 	} else {
-		// TODO
+		t := c.getDisplayValue(s, a)
+		return alignText(t, align.AlignRight, w)
 	}
 }
 
