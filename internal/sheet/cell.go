@@ -44,11 +44,13 @@ func (c *Cell) Copy(oldAddress, newAddress Address) *Cell {
 	return NewCell(val, c.alignment, c.stringType)
 }
 
-// Returns the value to display as a string. This is the value that shows up on
-// cell in the sheet display. This is the result of any calculation that may have
+// getDisplayValue returns the value to display as a string for numeric cells.
+// This is the value that shows up on cell in the sheet display.
+// It is the result of any calculation that may have
 // been required to be performed.
 //
 // Cell is assumed not to be string type when this function is called.
+// For string type cells, simply use c.value.
 func (c *Cell) getDisplayValue(s *Sheet, address Address) string {
 	postfix := evaler.GetPostfix(c.value)
 	for idx, token := range postfix {
@@ -69,11 +71,18 @@ func (c *Cell) getDisplayValue(s *Sheet, address Address) string {
 
 // Displays cell value using termbox.
 func (c *Cell) display(s *Sheet, address Address, row, colStart, colEnd int, selected bool) {
-	dispVal := c.value
-	if !c.stringType {
-		dispVal = c.getDisplayValue(s, address)
-	}
+	dispVal := c.getDisplay(s, address)
+
 	display.DisplayValue(dispVal, row, colStart, colEnd, c.alignment, selected)
+}
+
+// getDisplay gets what this cell should display
+func (c *Cell) getDisplay(s *Sheet, addr Address) string {
+	if c.stringType {
+		return c.value
+	}
+
+	return c.getDisplayValue(s, addr)
 }
 
 // Gets the raw value in a format the also specifies any alignment defined in cell.
