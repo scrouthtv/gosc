@@ -61,14 +61,14 @@ func alignText(str string, a align.Align, width int) string {
 	case align.AlignCenter:
 		fallthrough
 	default:
-		l := int(math.Ceil(extra / 2.0))
-		r := int(math.Floor(extra / 2.0))
+		l := int(math.Ceil(float64(extra) / 2.0))
+		r := int(math.Floor(float64(extra) / 2.0))
 		return spaces(l) + str + spaces(r)
 	}
 }
 
 func (s *Sheet) exportCell(c *Cell, a Address) string {
-	w := getColumnWidth(a.ColumnHeader())
+	w := s.getColumnWidth(a.ColumnHeader())
 	if c == nil {
 		return spaces(w)
 	} else if c.stringType {
@@ -80,7 +80,7 @@ func (s *Sheet) exportCell(c *Cell, a Address) string {
 }
 
 func spaces(n int) string {
-	var buf strings.Buffer
+	var buf strings.Builder
 	for i := 0; i < n; i++ {
 		buf.WriteRune(' ')
 	}
