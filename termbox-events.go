@@ -48,7 +48,7 @@ func processTermboxEvents(s *sheet.Sheet) {
 	smode := NORMAL_MODE
 	valBuffer := bytes.Buffer{}
 	insAlign := align.AlignRight
-	insTarg := INSERT_CELL
+	insTarget := INSERT_CELL
 
 	// Display editing prompt at the top of the screen.
 	go func() {
@@ -164,7 +164,7 @@ func processTermboxEvents(s *sheet.Sheet) {
 						if err != nil {
 							info = "error exporting: " + err.Error()
 						} else {
-							info = "successfully exported to " + path
+							info = "successfully exported to " + valBuffer.String()
 						}
 					}
 					
