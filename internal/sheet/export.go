@@ -47,23 +47,23 @@ func (s *Sheet) Export(path string) error {
 	return out.Flush()
 }
 
-func alignText(str string, a Align, w width) string {
-	if len(t) >= w {
-		return text[:w]
+func alignText(str string, a align.Align, width int) string {
+	if len(str) >= width {
+		return str[:width]
 	}
-	extra := w - len(c.value)
+	extra := width - len(str)
 	
-	switch c.alignment {
+	switch a {
 	case align.AlignLeft:
-		return text + spaces(extra)
+		return str + spaces(extra)
 	case align.AlignRight:
-		return spaces(extra) + text
+		return spaces(extra) + str
 	case align.AlignCenter:
 		fallthrough
 	default:
-		l := math.Ceil(extra / 2.0)
-		r := math.Floor(extra / 2.0)
-		return spaces(l) + text + spaces(r)
+		l := int(math.Ceil(extra / 2.0))
+		r := int(math.Floor(extra / 2.0))
+		return spaces(l) + str + spaces(r)
 	}
 }
 
