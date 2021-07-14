@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/howeyc/sc/internal/display"
-	"github.com/howeyc/sc/internal/sheet"
-	"github.com/howeyc/sc/internal/sheet/align"
+	"github.com/scrouthtv/gosc/internal/display"
+	"github.com/scrouthtv/gosc/internal/sheet"
+	"github.com/scrouthtv/gosc/internal/sheet/align"
 
 	"github.com/nsf/termbox-go"
 )
