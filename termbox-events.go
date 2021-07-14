@@ -25,7 +25,19 @@ const (
 	INFO_MODE
 )
 
+type insertTarget int
+
+const (
+	INSERT_CELL insertTarget = iota
+	INSERT_SAVE_PATH
+	INSERT_EXPORT_PATH
+)
+	
 var info string
+
+var setCellCallback = func() {
+	
+}()
 
 // Processes all the key strokes from termbox.
 //
@@ -36,6 +48,7 @@ func processTermboxEvents(s *sheet.Sheet) {
 	smode := NORMAL_MODE
 	valBuffer := bytes.Buffer{}
 	insAlign := align.AlignRight
+	insTarg := INSERT_CELL
 
 	// Display editing prompt at the top of the screen.
 	go func() {
@@ -87,21 +100,25 @@ func processTermboxEvents(s *sheet.Sheet) {
 						smode = EXIT_MODE
 					case '=', 'i':
 						smode = INSERT_MODE
+						insTarget = INSERT_CELL
 						prompt = "let"
 						insAlign = align.AlignRight
 					case '<':
 						prompt = "leftstring"
 						smode = INSERT_MODE
+						insTarget = INSERT_CELL
 						insAlign = align.AlignLeft
 						stringEntry = true
 					case '>':
 						prompt = "rightstring"
 						smode = INSERT_MODE
+						insTarget = INSERT_CELL
 						insAlign = align.AlignRight
 						stringEntry = true
 					case '\\':
 						prompt = "label"
 						smode = INSERT_MODE
+						insTarget = INSERT_CELL
 						insAlign = align.AlignCenter
 						stringEntry = true
 					case 'h':
@@ -126,22 +143,31 @@ func processTermboxEvents(s *sheet.Sheet) {
 					case 'f':
 						smode = FORMAT_MODE
 					case 'W':
-						path := "/tmp/hello"
-						err := s.Export(path)
-						smode = INFO_MODE
-						if err != nil {
-							info = err.Error()
-						} else {
-							info = "successfully exported to " + path
-						}
+						prompt = "export path"
+						smode = INSERT_MODE
+						insTarget = INSERT_EXPORT_PATH
 					}
 				}
 			case INSERT_MODE:
 				if ev.Key == termbox.KeyEnter {
-					s.SetCell(s.SelectedCell, sheet.NewCell(valBuffer.String(), insAlign, stringEntry))
-					valBuffer.Reset()
-					smode = NORMAL_MODE
-					stringEntry = false
+					switch insTarget {
+					case INSERT_CELL:
+						s.SetCell(s.SelectedCell, sheet.NewCell(valBuffer.String(), insAlign, stringEntry))
+						valBuffer.Reset()
+						smode = NORMAL_MODE
+						stringEntry = false
+					case INSERT_SAVE_PATH:
+						// TODO
+					case INSERT_EXPORT_PATH:
+						err := s.Export(valBuffer.String())
+						smode = INFO_MODE
+						if err != nil {
+							info = "error exporting: " + err.Error()
+						} else {
+							info = "successfully exported to " + path
+						}
+					}
+					
 				} else if ev.Key == termbox.KeyEsc {
 					valBuffer.Reset()
 					smode = NORMAL_MODE
