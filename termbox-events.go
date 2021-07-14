@@ -32,12 +32,6 @@ const (
 	INSERT_SAVE_PATH
 	INSERT_EXPORT_PATH
 )
-	
-var info string
-
-var setCellCallback = func() {
-	
-}()
 
 // Processes all the key strokes from termbox.
 //
@@ -49,6 +43,7 @@ func processTermboxEvents(s *sheet.Sheet) {
 	valBuffer := bytes.Buffer{}
 	insAlign := align.AlignRight
 	insTarget := INSERT_CELL
+	info := ""
 
 	// Display editing prompt at the top of the screen.
 	go func() {
