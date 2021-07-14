@@ -71,7 +71,7 @@ func (s *Sheet) exportCell(c *Cell, a Address) string {
 	w := getColumnWidth(a.ColumnHeader())
 	if c == nil {
 		return spaces(w)
-	} else i c.stringType {
+	} else if c.stringType {
 		return alignText(c.value, c.alignment, w)
 	} else {
 		t := c.getDisplayValue(s, a)
