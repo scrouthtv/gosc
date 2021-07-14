@@ -3,7 +3,10 @@ package sheet
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
+	"strings"
+	"github.com/scrouthtv/gosc/internal/sheet/align"
 )
 
 func (s *Sheet) Export(path string) error {
@@ -45,9 +48,40 @@ func (s *Sheet) Export(path string) error {
 }
 
 func (s *Sheet) exportCell(c *Cell, a Address) string {
+	w := getColumnWidth(a.ColumnHeader())
 	if c == nil {
-		return "          "
+		return spaces(w)
+	} else if c.stringType {
+		text := c.value
+		if len(c.value) >= w {
+			return text[:w]
+		}
+		
+		extra := w - len(c.value)
+		
+		switch c.alignment {
+		case align.AlignLeft:
+			return text + spaces(extra)
+		case align.AlignRight:
+			return spaces(extra) + text
+		case align.AlignCenter:
+			fallthrough
+		default:
+			l := math.Ceil(extra / 2.0)
+			r := math.Floor(extra / 2.0)
+			return spaces(l) + text + spaces(r)
+		}
+	} else {
+		// TODO
 	}
+}
+
+func spaces(n int) string {
+	var buf strings.Buffer
+	for i := 0; i < n; i++ {
+		buf.WriteRune(' ')
+	}
+	return buf.String()
 }
 
 func (s *Sheet) Size() (width int, height int) {
