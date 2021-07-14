@@ -17,12 +17,15 @@ type SheetMode int
 
 const (
 	NORMAL_MODE SheetMode = iota
-	INSERT_MODE SheetMode = iota
-	EXIT_MODE   SheetMode = iota
-	YANK_MODE   SheetMode = iota
-	PUT_MODE    SheetMode = iota
-	FORMAT_MODE SheetMode = iota
+	INSERT_MODE
+	EXIT_MODE
+	YANK_MODE
+	PUT_MODE
+	FORMAT_MODE
+	INFO_MODE
 )
+
+var info string
 
 // Processes all the key strokes from termbox.
 //
@@ -34,9 +37,9 @@ func processTermboxEvents(s *sheet.Sheet) {
 	valBuffer := bytes.Buffer{}
 	insAlign := align.AlignRight
 
-	// Display
+	// Display editing prompt at the top of the screen.
 	go func() {
-		for _ = range time.Tick(200 * time.Millisecond) {
+		for range time.Tick(200 * time.Millisecond) {
 			switch smode {
 			case FORMAT_MODE:
 				display.DisplayValue(fmt.Sprintf("Current format is %s", s.DisplayFormat(s.SelectedCell)), 1, 0, 80, align.AlignLeft, false)
@@ -52,6 +55,8 @@ func processTermboxEvents(s *sheet.Sheet) {
 				display.DisplayValue("Yank row/column:  r: row  c: column", 0, 0, 80, align.AlignLeft, false)
 			case PUT_MODE:
 				display.DisplayValue("Put row/column:  r: row  c: column", 0, 0, 80, align.AlignLeft, false)
+			case INFO_MODE:
+				display.DisplayValue(info, 0, 0, 80, align.AlignLeft, false)
 			}
 			termbox.Flush()
 		}
@@ -62,16 +67,20 @@ func processTermboxEvents(s *sheet.Sheet) {
 		switch ev.Type {
 		case termbox.EventKey:
 			switch smode {
-			case NORMAL_MODE:
+			case NORMAL_MODE, INFO_MODE:
 				switch ev.Key {
 				case termbox.KeyArrowUp:
 					s.MoveUp()
+					smode = NORMAL_MODE
 				case termbox.KeyArrowDown:
 					s.MoveDown()
+					smode = NORMAL_MODE
 				case termbox.KeyArrowLeft:
 					s.MoveLeft()
+					smode = NORMAL_MODE
 				case termbox.KeyArrowRight:
 					s.MoveRight()
+					smode = NORMAL_MODE
 				case 0:
 					switch ev.Ch {
 					case 'q':
@@ -97,14 +106,19 @@ func processTermboxEvents(s *sheet.Sheet) {
 						stringEntry = true
 					case 'h':
 						s.MoveLeft()
+						smode = NORMAL_MODE
 					case 'j':
 						s.MoveDown()
+						smode = NORMAL_MODE
 					case 'k':
 						s.MoveUp()
+						smode = NORMAL_MODE
 					case 'l':
 						s.MoveRight()
+						smode = NORMAL_MODE
 					case 'x':
 						s.ClearCell(s.SelectedCell)
+						smode = NORMAL_MODE
 					case 'y':
 						smode = YANK_MODE
 					case 'p':
@@ -112,11 +126,13 @@ func processTermboxEvents(s *sheet.Sheet) {
 					case 'f':
 						smode = FORMAT_MODE
 					case 'W':
-						err := display.Export("/tmp/hello")
+						path := "/tmp/hello"
+						err := s.Export(path)
+						smode = INFO_MODE
 						if err != nil {
-							prompt = err.Error()
+							info = err.Error()
 						} else {
-							prompt = "successfully exported"
+							info = "successfully exported to " + path
 						}
 					}
 				}

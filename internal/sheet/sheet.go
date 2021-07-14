@@ -2,7 +2,6 @@
 package sheet
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/howeyc/sc/internal/evaler"
@@ -150,7 +149,7 @@ func (s *Sheet) GetCell(address Address) (*Cell, error) {
 	} else if address == s.SelectedCell {
 		return &Cell{}, nil
 	}
-	return nil, errors.New("Cell does not exist in spreadsheet.")
+	return nil, &ErrCellNotFound{address}
 }
 
 // Sets the address to the passed in cell. Previous cell data that exists is thrown away.
