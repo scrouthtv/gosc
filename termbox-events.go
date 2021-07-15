@@ -71,162 +71,169 @@ func processTermboxEvents(s *sheet.Sheet) {
 	}()
 
 	// Events
-	for ev := termbox.PollEvent(); ev.Type != termbox.EventError; ev = termbox.PollEvent() {
-		switch ev.Type {
-		case termbox.EventKey:
-			switch smode {
-			case NORMAL_MODE, INFO_MODE:
-				switch ev.Key {
-				case termbox.KeyArrowUp:
-					s.MoveUp()
-					smode = NORMAL_MODE
-				case termbox.KeyArrowDown:
-					s.MoveDown()
-					smode = NORMAL_MODE
-				case termbox.KeyArrowLeft:
+	for {
+		ev := termbox.PollEvent() 
+
+		if ev.Type == termbox.EventError {
+			smode = INFO_MODE
+			info = "error: " + ev.Err.Error()
+		}
+
+		switch smode {
+		case NORMAL_MODE, INFO_MODE:
+			switch ev.Key {
+			case termbox.KeyArrowUp:
+				s.MoveUp()
+				smode = NORMAL_MODE
+			case termbox.KeyArrowDown:
+				s.MoveDown()
+				smode = NORMAL_MODE
+			case termbox.KeyArrowLeft:
+				s.MoveLeft()
+				smode = NORMAL_MODE
+			case termbox.KeyArrowRight:
+				s.MoveRight()
+				smode = NORMAL_MODE
+			case 0:
+				switch ev.Ch {
+				case 'q':
+					smode = EXIT_MODE
+				case '=', 'i':
+					smode = INSERT_MODE
+					insTarget = INSERT_CELL
+					prompt = "let " + s.SelectedCell.String()
+					insAlign = align.AlignRight
+				case '<':
+					prompt = "leftstring " + s.SelectedCell.String()
+					smode = INSERT_MODE
+					insTarget = INSERT_CELL
+					insAlign = align.AlignLeft
+					stringEntry = true
+				case '>':
+					prompt = "rightstring " + s.SelectedCell.String()
+					smode = INSERT_MODE
+					insTarget = INSERT_CELL
+					insAlign = align.AlignRight
+					stringEntry = true
+				case '\\':
+					prompt = "label " + s.SelectedCell.String()
+					smode = INSERT_MODE
+					insTarget = INSERT_CELL
+					insAlign = align.AlignCenter
+					stringEntry = true
+				case 'h':
 					s.MoveLeft()
 					smode = NORMAL_MODE
-				case termbox.KeyArrowRight:
+				case 'j':
+					s.MoveDown()
+					smode = NORMAL_MODE
+				case 'k':
+					s.MoveUp()
+					smode = NORMAL_MODE
+				case 'l':
 					s.MoveRight()
 					smode = NORMAL_MODE
-				case 0:
-					switch ev.Ch {
-					case 'q':
-						smode = EXIT_MODE
-					case '=', 'i':
-						smode = INSERT_MODE
-						insTarget = INSERT_CELL
-						prompt = "let " + s.SelectedCell.String()
-						insAlign = align.AlignRight
-					case '<':
-						prompt = "leftstring " + s.SelectedCell.String()
-						smode = INSERT_MODE
-						insTarget = INSERT_CELL
-						insAlign = align.AlignLeft
-						stringEntry = true
-					case '>':
-						prompt = "rightstring " + s.SelectedCell.String()
-						smode = INSERT_MODE
-						insTarget = INSERT_CELL
-						insAlign = align.AlignRight
-						stringEntry = true
-					case '\\':
-						prompt = "label " + s.SelectedCell.String()
-						smode = INSERT_MODE
-						insTarget = INSERT_CELL
-						insAlign = align.AlignCenter
-						stringEntry = true
-					case 'h':
-						s.MoveLeft()
-						smode = NORMAL_MODE
-					case 'j':
-						s.MoveDown()
-						smode = NORMAL_MODE
-					case 'k':
-						s.MoveUp()
-						smode = NORMAL_MODE
-					case 'l':
-						s.MoveRight()
-						smode = NORMAL_MODE
-					case 'x':
-						s.ClearCell(s.SelectedCell)
-						smode = NORMAL_MODE
-					case 'y':
-						smode = YANK_MODE
-					case 'p':
-						smode = PUT_MODE
-					case 'f':
-						smode = FORMAT_MODE
-					case 'W':
-						prompt = "export path"
-						smode = INSERT_MODE
-						insTarget = INSERT_EXPORT_PATH
-					}
+				case 'x':
+					s.ClearCell(s.SelectedCell)
+					smode = NORMAL_MODE
+				case 'y':
+					smode = YANK_MODE
+				case 'p':
+					smode = PUT_MODE
+				case 'f':
+					smode = FORMAT_MODE
+				case 'W':
+					prompt = "export path"
+					smode = INSERT_MODE
+					insTarget = INSERT_EXPORT_PATH
+				default:
+					info = "unknown command " + string(ev.Ch)
+					smode = INFO_MODE
 				}
-			case INSERT_MODE:
-				if ev.Key == termbox.KeyEnter {
-					switch insTarget {
-					case INSERT_CELL:
-						s.SetCell(s.SelectedCell, sheet.NewCell(valBuffer.String(), insAlign, stringEntry))
-						valBuffer.Reset()
-						smode = NORMAL_MODE
-						stringEntry = false
-					case INSERT_SAVE_PATH:
-						// TODO
-					case INSERT_EXPORT_PATH:
-						err := s.Export(valBuffer.String())
-						smode = INFO_MODE
-						if err != nil {
-							info = "error exporting: " + err.Error()
-						} else {
-							info = "successfully exported to " + valBuffer.String()
-						}
-					}
-				} else if ev.Key == termbox.KeyEsc {
+			}
+		case INSERT_MODE:
+			if ev.Key == termbox.KeyEnter {
+				switch insTarget {
+				case INSERT_CELL:
+					s.SetCell(s.SelectedCell, sheet.NewCell(valBuffer.String(), insAlign, stringEntry))
 					valBuffer.Reset()
 					smode = NORMAL_MODE
 					stringEntry = false
-				} else if ev.Key == termbox.KeyBackspace || ev.Key == termbox.Key(127) {
-					if valBuffer.Len() == 0 {
-						return
+				case INSERT_SAVE_PATH:
+					// TODO
+				case INSERT_EXPORT_PATH:
+					err := s.Export(valBuffer.String())
+					smode = INFO_MODE
+					if err != nil {
+						info = "error exporting: " + err.Error()
+					} else {
+						info = "successfully exported to " + valBuffer.String()
 					}
-
-					valBuffer = bytes.NewBuffer(valBuffer.Bytes()[:valBuffer.Len()-1])
-				} else {
-					valBuffer.WriteRune(ev.Ch)
 				}
-			case EXIT_MODE:
-				if ev.Key == 0 && ev.Ch == 'y' {
-					s.Save()
-				}
-				termbox.Close()
-				return
-			case YANK_MODE:
-				if ev.Key == 0 && ev.Ch == 'r' {
-					s.YankRow()
-				} else if ev.Key == 0 && ev.Ch == 'c' {
-					s.YankColumn()
-				}
+			} else if ev.Key == termbox.KeyEsc {
+				valBuffer.Reset()
 				smode = NORMAL_MODE
-
-			case PUT_MODE:
-				if ev.Key == 0 && ev.Ch == 'r' {
-					s.PutRow()
-				} else if ev.Key == 0 && ev.Ch == 'c' {
-					s.PutColumn()
+				stringEntry = false
+			} else if ev.Key == termbox.KeyBackspace || ev.Key == termbox.Key(127) {
+				if valBuffer.Len() == 0 {
+					continue
 				}
+
+				valBuffer = bytes.NewBuffer(valBuffer.Bytes()[:valBuffer.Len()-1])
+			} else {
+				valBuffer.WriteRune(ev.Ch)
+			}
+		case EXIT_MODE:
+			if ev.Key == 0 && ev.Ch == 'y' {
+				s.Save()
+			}
+			termbox.Close()
+			return
+		case YANK_MODE:
+			if ev.Key == 0 && ev.Ch == 'r' {
+				s.YankRow()
+			} else if ev.Key == 0 && ev.Ch == 'c' {
+				s.YankColumn()
+			}
+			smode = NORMAL_MODE
+
+		case PUT_MODE:
+			if ev.Key == 0 && ev.Ch == 'r' {
+				s.PutRow()
+			} else if ev.Key == 0 && ev.Ch == 'c' {
+				s.PutColumn()
+			}
+			smode = NORMAL_MODE
+		case FORMAT_MODE:
+			switch ev.Key {
+			case termbox.KeyEsc, termbox.KeyEnter:
 				smode = NORMAL_MODE
-			case FORMAT_MODE:
-				switch ev.Key {
-				case termbox.KeyEsc, termbox.KeyEnter:
+			case termbox.KeyArrowLeft:
+				s.DecreaseColumnWidth(s.SelectedCell.ColumnHeader())
+			case termbox.KeyArrowRight:
+				s.IncreaseColumnWidth(s.SelectedCell.ColumnHeader())
+			case termbox.KeyArrowDown:
+				s.DecreaseColumnPrecision(s.SelectedCell.ColumnHeader())
+			case termbox.KeyArrowUp:
+				s.IncreaseColumnPrecision(s.SelectedCell.ColumnHeader())
+			case 0:
+				switch ev.Ch {
+				case 'q':
 					smode = NORMAL_MODE
-				case termbox.KeyArrowLeft:
+				case '<', 'h':
 					s.DecreaseColumnWidth(s.SelectedCell.ColumnHeader())
-				case termbox.KeyArrowRight:
+				case '>', 'l':
 					s.IncreaseColumnWidth(s.SelectedCell.ColumnHeader())
-				case termbox.KeyArrowDown:
+				case '-', 'j':
 					s.DecreaseColumnPrecision(s.SelectedCell.ColumnHeader())
-				case termbox.KeyArrowUp:
+				case '+', 'k':
 					s.IncreaseColumnPrecision(s.SelectedCell.ColumnHeader())
-				case 0:
-					switch ev.Ch {
-					case 'q':
-						smode = NORMAL_MODE
-					case '<', 'h':
-						s.DecreaseColumnWidth(s.SelectedCell.ColumnHeader())
-					case '>', 'l':
-						s.IncreaseColumnWidth(s.SelectedCell.ColumnHeader())
-					case '-', 'j':
-						s.DecreaseColumnPrecision(s.SelectedCell.ColumnHeader())
-					case '+', 'k':
-						s.IncreaseColumnPrecision(s.SelectedCell.ColumnHeader())
-					}
 				}
+			}
 
-				// Once switched out of format mode, clear the format prompt line.
-				if smode == NORMAL_MODE {
-					display.DisplayValue("", 1, 0, 80, align.AlignLeft, false)
-				}
+			// Once switched out of format mode, clear the format prompt line.
+			if smode == NORMAL_MODE {
+				display.DisplayValue("", 1, 0, 80, align.AlignLeft, false)
 			}
 		}
 	}
