@@ -40,7 +40,7 @@ func processTermboxEvents(s *sheet.Sheet) {
 	prompt := ""
 	stringEntry := false
 	smode := NORMAL_MODE
-	valBuffer := bytes.Buffer{}
+	valBuffer := &bytes.Buffer{}
 	insAlign := align.AlignRight
 	insTarget := INSERT_CELL
 	info := ""
@@ -162,18 +162,16 @@ func processTermboxEvents(s *sheet.Sheet) {
 							info = "successfully exported to " + valBuffer.String()
 						}
 					}
-					
 				} else if ev.Key == termbox.KeyEsc {
 					valBuffer.Reset()
 					smode = NORMAL_MODE
 					stringEntry = false
-				} else if ev.Key == termbox.KeyBackspace {
-					s := valBuffer.String()
-					valBuffer = bytes.Buffer{}
-					if len(s) > 0 {
-						s = s[0 : len(s)-1]
+				} else if ev.Key == termbox.KeyBackspace || ev.Key == termbox.Key(127) {
+					if valBuffer.Len() == 0 {
+						return
 					}
-					valBuffer.WriteString(s)
+
+					valBuffer = bytes.NewBuffer(valBuffer.Bytes()[:valBuffer.Len() - 1])
 				} else {
 					valBuffer.WriteRune(ev.Ch)
 				}

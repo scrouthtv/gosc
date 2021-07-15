@@ -2,7 +2,6 @@ package sheet
 
 import (
 	"bufio"
-	"fmt"
 	"math"
 	"os"
 	"strings"
@@ -19,8 +18,6 @@ func (s *Sheet) Export(path string) error {
 	out := bufio.NewWriter(f)
 	w, h := s.Size()
 
-	out.WriteString(fmt.Sprintf("size: %d %d\n", w, h))
-
 	for x := 0; x <= w; x++ {
 		for y := 0; y <= h; y++ {
 			a := NewAddress(x, y)
@@ -33,7 +30,7 @@ func (s *Sheet) Export(path string) error {
 				continue
 			}
 
-			_, err = out.WriteString(c.getDisplay(s, a))
+			_, err = out.WriteString(s.exportCell(c, a))
 			if err != nil {
 				return err
 			}
@@ -52,7 +49,7 @@ func alignText(str string, a align.Align, width int) string {
 		return str[:width]
 	}
 	extra := width - len(str)
-	
+
 	switch a {
 	case align.AlignLeft:
 		return str + spaces(extra)
