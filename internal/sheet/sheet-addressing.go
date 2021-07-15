@@ -57,6 +57,10 @@ func (addr Address) RowCol() (row, column int) {
 	return addr.Row(), addr.Column()
 }
 
+func (addr Address) String() string {
+	return addr.ColumnHeader() + strconv.Itoa(addr.Row())
+}
+
 // Creates and address given an integer row and column.
 func NewAddress(row, column int) Address {
 	column += 10

@@ -56,7 +56,7 @@ func processTermboxEvents(s *sheet.Sheet) {
 				selSel, _ := s.GetCell(s.SelectedCell)
 				display.DisplayValue(fmt.Sprintf("%s (%s) [%s]", s.SelectedCell, s.DisplayFormat(s.SelectedCell), selSel.StatusBarVal()), 0, 0, 80, align.AlignLeft, false)
 			case INSERT_MODE:
-				display.DisplayValue(fmt.Sprintf("i> %s %s = %s", prompt, s.SelectedCell, valBuffer.String()), 0, 0, 80, align.AlignLeft, false)
+				display.DisplayValue(fmt.Sprintf("i> %s = %s", prompt, valBuffer.String()), 0, 0, 80, align.AlignLeft, false)
 			case EXIT_MODE:
 				display.DisplayValue(fmt.Sprintf("File \"%s\" is modified, save before exiting?", s.Filename), 0, 0, 80, align.AlignLeft, false)
 			case YANK_MODE:
@@ -96,22 +96,22 @@ func processTermboxEvents(s *sheet.Sheet) {
 					case '=', 'i':
 						smode = INSERT_MODE
 						insTarget = INSERT_CELL
-						prompt = "let"
+						prompt = "let " + s.SelectedCell.String()
 						insAlign = align.AlignRight
 					case '<':
-						prompt = "leftstring"
+						prompt = "leftstring " + s.SelectedCell.String()
 						smode = INSERT_MODE
 						insTarget = INSERT_CELL
 						insAlign = align.AlignLeft
 						stringEntry = true
 					case '>':
-						prompt = "rightstring"
+						prompt = "rightstring " + s.SelectedCell.String()
 						smode = INSERT_MODE
 						insTarget = INSERT_CELL
 						insAlign = align.AlignRight
 						stringEntry = true
 					case '\\':
-						prompt = "label"
+						prompt = "label " + s.SelectedCell.String()
 						smode = INSERT_MODE
 						insTarget = INSERT_CELL
 						insAlign = align.AlignCenter
@@ -171,7 +171,7 @@ func processTermboxEvents(s *sheet.Sheet) {
 						return
 					}
 
-					valBuffer = bytes.NewBuffer(valBuffer.Bytes()[:valBuffer.Len() - 1])
+					valBuffer = bytes.NewBuffer(valBuffer.Bytes()[:valBuffer.Len()-1])
 				} else {
 					valBuffer.WriteRune(ev.Ch)
 				}
