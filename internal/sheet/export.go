@@ -2,9 +2,11 @@ package sheet
 
 import (
 	"bufio"
+	"errors"
 	"math"
 	"os"
 	"strings"
+
 	"github.com/scrouthtv/gosc/internal/sheet/align"
 )
 
@@ -23,6 +25,10 @@ func (s *Sheet) Export(path string) error {
 			a := NewAddress(x, y)
 			c, err := s.GetCell(a)
 			if err != nil {
+				if errors.Is(err, &ErrCellNotFound{}) {
+					continue
+				}
+
 				return err
 			}
 
