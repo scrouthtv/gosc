@@ -2,7 +2,6 @@ package sheet
 
 import (
 	"bufio"
-	"errors"
 	"math"
 	"os"
 	"strings"
@@ -25,11 +24,9 @@ func (s *Sheet) Export(path string) error {
 			a := NewAddress(x, y)
 			c, err := s.GetCell(a)
 			if err != nil {
-				if errors.Is(err, &ErrCellNotFound{}) {
-					continue
-				}
-
-				return err
+				w := s.getColumnWidth(a.ColumnHeader())
+				out.WriteString(spaces(w))
+				continue
 			}
 
 			if c == nil {
@@ -83,11 +80,7 @@ func (s *Sheet) exportCell(c *Cell, a Address) string {
 }
 
 func spaces(n int) string {
-	var buf strings.Builder
-	for i := 0; i < n; i++ {
-		buf.WriteRune(' ')
-	}
-	return buf.String()
+	return strings.Repeat(" ", n)
 }
 
 func (s *Sheet) Size() (width int, height int) {
