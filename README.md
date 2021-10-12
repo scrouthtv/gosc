@@ -22,4 +22,5 @@ This version of `sc` is cross-platform, allowing it to view/edit sc files on a W
 * Quit: q
 
 ## TODO
-* 
+* Undo `u`
+* Goto `g
