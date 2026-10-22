@@ -4,11 +4,12 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"time"
-
-	"github.com/scrouthtv/gosc/internal/display"
-	"github.com/scrouthtv/gosc/internal/sheet"
-	"github.com/scrouthtv/gosc/internal/sheet/align"
+	
+	"github.com/pedroalbanese/sc/internal/display"
+	"github.com/pedroalbanese/sc/internal/sheet"
+	"github.com/pedroalbanese/sc/internal/sheet/align"
 
 	"github.com/nsf/termbox-go"
 )
@@ -146,6 +147,13 @@ func processTermboxEvents(s *sheet.Sheet) {
 					prompt = "export path"
 					smode = INSERT_MODE
 					insTarget = INSERT_EXPORT_PATH
+				case 'u':
+					s.Undo()
+				case 'g':
+					addr := promptString("Goto cell: ")
+					if addr != "" {
+						s.GoTo(sheet.Address(strings.ToUpper(addr)))
+					}
 				default:
 					info = "unknown command " + string(ev.Ch)
 					smode = INFO_MODE
@@ -237,4 +245,55 @@ func processTermboxEvents(s *sheet.Sheet) {
 			}
 		}
 	}
+}
+
+// promptString displays a prompt on the bottom line and reads a line of
+// input from the user, one key at a time, until Enter is pressed.
+//
+// Returns the trimmed input (empty if the user pressed Esc or Ctrl+C).
+func promptString(prompt string) string {
+	displayWidth, displayHeight := termbox.Size()
+	row := displayHeight - 1
+
+	// Draw the prompt.
+	display.DisplayValue(prompt, row, 0, displayWidth, align.AlignLeft, false)
+	termbox.Flush()
+
+	var buf []rune
+	var result string
+	for {
+		ev := termbox.PollEvent()
+		if ev.Type != termbox.EventKey {
+			continue
+		}
+
+		switch ev.Key {
+		case termbox.KeyEnter:
+			result = strings.TrimSpace(string(buf))
+			goto done
+		case termbox.KeyEsc, termbox.KeyCtrlC:
+			result = ""
+			goto done
+		case termbox.KeyBackspace, termbox.KeyBackspace2:
+			if len(buf) > 0 {
+				buf = buf[:len(buf)-1]
+			}
+		default:
+			if ev.Ch != 0 {
+				buf = append(buf, ev.Ch)
+			}
+		}
+
+		// Redraw prompt + current buffer.
+		line := prompt + string(buf)
+		display.DisplayValue(line, row, 0, displayWidth, align.AlignLeft, false)
+		termbox.Flush()
+	}
+
+done:
+	// Clear the prompt line before returning.
+	blank := strings.Repeat(" ", displayWidth)
+	display.DisplayValue(blank, row, 0, displayWidth, align.AlignLeft, false)
+	termbox.Flush()
+	return result
 }

@@ -3,8 +3,9 @@ package sheet
 
 import (
 	"fmt"
+	"strings"
 
-	"github.com/scrouthtv/gosc/internal/evaler"
+	"github.com/pedroalbanese/sc/internal/evaler"
 )
 
 const (
@@ -13,10 +14,28 @@ const (
 	initial_COLUMN_TYPE      = 0
 )
 
+// currentSheet is set by getDisplayValue so RangeExpander can access
+// the sheet currently being evaluated.
+var currentSheet *Sheet
+
+func init() {
+	evaler.RangeExpander = func(rng string) []string {
+		if currentSheet == nil {
+			return []string{"0"}
+		}
+		return currentSheet.expandRangeList(rng)
+	}
+}
+
 type ColumnFormat struct {
 	width     int
 	precision int
 	ctype     int
+}
+
+type lastEdit struct {
+	address Address
+	cell    *Cell
 }
 
 type Sheet struct {
@@ -31,41 +50,33 @@ type Sheet struct {
 
 	clipboardRangeStart, clipboardRangeEnd Address
 
-	// display window
 	startRow, startCol       int
 	displayRows, displayCols int
 
 	loading bool
+
+	lastUndo *lastEdit
 }
 
-// Creates a new sheet and loads a sheet from filename if it exists.
 func NewSheet(filename string) Sheet {
 	s := Sheet{Filename: filename, SelectedCell: "A0",
 		columnFormats: make(map[string]ColumnFormat), data: make(map[Address]*Cell),
 		maxRowForColumn: make(map[int]int), maxColumnForRow: make(map[int]int)}
 
-	// Run display to get the row and column height of display set inside of sheet.
 	s.display()
-
-	// Load values into sheet and move to selected cell
 	s.Load()
-
-	// Display loaded sheet
 	s.display()
 
 	return s
 }
 
-// Given an address, returns the precision to use to display a number.
 func (s *Sheet) getPrecision(address Address) int {
 	if cFormat, found := s.columnFormats[address.ColumnHeader()]; found {
 		return cFormat.precision
-	} else {
-		return initial_COLUMN_PRECISION
 	}
+	return initial_COLUMN_PRECISION
 }
 
-// For a given column header string, decreases column precision.
 func (s *Sheet) DecreaseColumnPrecision(column string) {
 	if cFormat, found := s.columnFormats[column]; found {
 		cFormat.precision--
@@ -79,7 +90,6 @@ func (s *Sheet) DecreaseColumnPrecision(column string) {
 	s.display()
 }
 
-// For a given column header string, increases column precision.
 func (s *Sheet) IncreaseColumnPrecision(column string) {
 	if cFormat, found := s.columnFormats[column]; found {
 		cFormat.precision++
@@ -90,27 +100,21 @@ func (s *Sheet) IncreaseColumnPrecision(column string) {
 	s.display()
 }
 
-// Returns the the display format string specifying the Width, Precition, and Type
-// of the column.
 func (s *Sheet) DisplayFormat(address Address) string {
 	if cFormat, found := s.columnFormats[address.ColumnHeader()]; found {
 		return fmt.Sprintf("%d %d %d", cFormat.width, cFormat.precision, cFormat.ctype)
-	} else {
-		return fmt.Sprintf("%d %d %d", initial_COLUMN_WIDTH, initial_COLUMN_PRECISION, initial_COLUMN_TYPE)
 	}
+	return fmt.Sprintf("%d %d %d", initial_COLUMN_WIDTH, initial_COLUMN_PRECISION, initial_COLUMN_TYPE)
 }
 
-// For a given column header string, returns the display width of the column in characters.
 func (s *Sheet) getColumnWidth(column string) int {
 	if cFormat, found := s.columnFormats[column]; found {
 		return cFormat.width
-	} else {
-		s.columnFormats[column] = ColumnFormat{width: initial_COLUMN_WIDTH, precision: initial_COLUMN_PRECISION, ctype: initial_COLUMN_TYPE}
-		return initial_COLUMN_WIDTH
 	}
+	s.columnFormats[column] = ColumnFormat{width: initial_COLUMN_WIDTH, precision: initial_COLUMN_PRECISION, ctype: initial_COLUMN_TYPE}
+	return initial_COLUMN_WIDTH
 }
 
-// For a given column header string, decreases column width.
 func (s *Sheet) DecreaseColumnWidth(column string) {
 	if cFormat, found := s.columnFormats[column]; found {
 		cFormat.width--
@@ -124,7 +128,6 @@ func (s *Sheet) DecreaseColumnWidth(column string) {
 	s.display()
 }
 
-// For a given column header string, increases column width.
 func (s *Sheet) IncreaseColumnWidth(column string) {
 	if cFormat, found := s.columnFormats[column]; found {
 		cFormat.width++
@@ -135,14 +138,57 @@ func (s *Sheet) IncreaseColumnWidth(column string) {
 	s.display()
 }
 
-// Removes the cell at the given address from a sheet.
-func (s *Sheet) ClearCell(address Address) {
-	delete(s.data, address)
-
-	s.findMaximums(address)
+func (s *Sheet) PushUndo(address Address) {
+	old, err := s.GetCell(address)
+	if err != nil {
+		old = nil
+	} else if old != nil {
+		old = old.Copy(address, address)
+	}
+	s.lastUndo = &lastEdit{address: address, cell: old}
 }
 
-// Returns the cell at the given address.
+func (s *Sheet) Undo() bool {
+	if s.lastUndo == nil {
+		return false
+	}
+	entry := s.lastUndo
+	s.lastUndo = nil
+	if entry.cell == nil {
+		delete(s.data, entry.address)
+	} else {
+		entry.cell.cacheValid = false
+		s.data[entry.address] = entry.cell
+	}
+	s.invalidateCache(entry.address)
+	s.display()
+	return true
+}
+
+func (s *Sheet) invalidateCache(address Address) {
+	if cell, err := s.GetCell(address); err == nil && cell != nil {
+		cell.cacheValid = false
+	}
+	for addr, cell := range s.data {
+		if _, depends := cell.forwardRefs[address]; depends {
+			if cell.cacheValid {
+				cell.cacheValid = false
+				s.invalidateCache(addr)
+			}
+		}
+	}
+}
+
+func (s *Sheet) ClearCell(address Address) {
+	if !s.loading {
+		s.PushUndo(address)
+	}
+	delete(s.data, address)
+	s.findMaximums(address)
+	s.invalidateCache(address)
+	s.display()
+}
+
 func (s *Sheet) GetCell(address Address) (*Cell, error) {
 	if cell, found := s.data[address]; found {
 		return cell, nil
@@ -152,47 +198,50 @@ func (s *Sheet) GetCell(address Address) (*Cell, error) {
 	return nil, &ErrCellNotFound{address}
 }
 
-// Sets the address to the passed in cell. Previous cell data that exists is thrown away.
 func (s *Sheet) SetCell(address Address, cell *Cell) {
+	if !s.loading {
+		s.PushUndo(address)
+	}
 	if !cell.stringType {
 		postfix := evaler.GetPostfix(cell.value)
 		for _, token := range postfix {
-			if evaler.IsCellAddr(token) {
-				tokenAddr := Address(token)
-				cell.forwardRefs[tokenAddr] = struct{}{}
+			if evaler.IsCellRange(token) {
+				parts := strings.SplitN(token, ":", 2)
+				start := Address(parts[0])
+				end := Address(parts[1])
+				r1, c1 := start.RowCol()
+				r2, c2 := end.RowCol()
+				for r := r1; r <= r2; r++ {
+					for c := c1; c <= c2; c++ {
+						cell.forwardRefs[NewAddress(r, c)] = struct{}{}
+					}
+				}
+			} else if evaler.IsCellAddr(token) {
+				cell.forwardRefs[Address(token)] = struct{}{}
 			}
 		}
 	}
 	s.data[address] = cell
-
 	s.setMaximums(address)
-
-	// Refresh the sheet
-	s.display()
+	s.invalidateCache(address)
+	if !s.loading {
+		s.display()
+	}
 }
 
-// Sets the max row and column with values in them to make clipboard actions possible.
 func (s *Sheet) setMaximums(address Address) {
 	row, col := address.RowCol()
-
-	currRowMax := s.maxRowForColumn[col]
-	if row > currRowMax {
+	if row > s.maxRowForColumn[col] {
 		s.maxRowForColumn[col] = row
 	}
-
-	currColMax := s.maxColumnForRow[row]
-	if col > currColMax {
+	if col > s.maxColumnForRow[row] {
 		s.maxColumnForRow[row] = col
 	}
 }
 
-// Finds the max row and column with values in them to make clipboard actions possible.
 func (s *Sheet) findMaximums(address Address) {
 	row, column := address.RowCol()
-
-	currColMax := s.maxColumnForRow[row]
-	if column == currColMax {
-		// Find lower column used on row
+	if column == s.maxColumnForRow[row] {
 		delete(s.maxColumnForRow, row)
 		for colIdx := column; colIdx >= 0; colIdx-- {
 			if _, found := s.data[NewAddress(row, colIdx)]; found {
@@ -200,10 +249,7 @@ func (s *Sheet) findMaximums(address Address) {
 			}
 		}
 	}
-
-	currRowMax := s.maxRowForColumn[column]
-	if row == currRowMax {
-		// Find lower row used for column
+	if row == s.maxRowForColumn[column] {
 		delete(s.maxRowForColumn, column)
 		for rowIdx := row; rowIdx >= 0; rowIdx-- {
 			if _, found := s.data[NewAddress(rowIdx, column)]; found {

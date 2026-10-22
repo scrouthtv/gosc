@@ -1,13 +1,9 @@
-github.com/mattn/go-runewidth v0.0.0-20150527101916-5890272cd41c h1:xXmA2qxVXWWSW5xPOUZ5jkY/AJXLHv9x7XTuwxQISjw=
-github.com/mattn/go-runewidth v0.0.0-20150527101916-5890272cd41c/go.mod h1:LwmH8dsx7+W8Uxz3IHJYH5QSwggIsqBzpuz5H//U1FU=
 github.com/mattn/go-runewidth v0.0.9/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m2gUSrubnMI=
 github.com/mattn/go-runewidth v0.0.13 h1:lTGmDsbAYt5DmK6OnoV7EuIF1wEIFAcxld6ypU4OSgU=
 github.com/mattn/go-runewidth v0.0.13/go.mod h1:Jdepj2loyihRzMpdS35Xk/zdY8IAYHsh153qUoGf23w=
-github.com/nsf/termbox-go v0.0.0-20150618033820-675ffd907b74 h1:IM789gNnZWWAParmFZRH2P/aKnOhrUJJKzrg3Wf+EwE=
-github.com/nsf/termbox-go v0.0.0-20150618033820-675ffd907b74/go.mod h1:IuKpRQcYE1Tfu+oAQqaLisqDeXgjyyltCfsaoYN18NQ=
 github.com/nsf/termbox-go v1.1.1 h1:nksUPLCb73Q++DwbYUBEglYBRPZyoXJdrj5L+TkjyZY=
 github.com/nsf/termbox-go v1.1.1/go.mod h1:T0cTdVuOwf7pHQNtfhnEbzHbcNyCEcVU4YPpouCbVxo=
+github.com/pedroalbanese/sc v0.0.0 h1:V119hsFdC498jB0Kxl8im6yd/NaKF3co5kmmbIk45hw=
+github.com/pedroalbanese/sc v0.0.0/go.mod h1:1+1izuBPRkz/vBlbwawHSOhn17mJTIiCiQ5+mozMVo8=
 github.com/rivo/uniseg v0.2.0 h1:S1pD9weZBuJdFmowNwbpi7BJ8TNftyUImj/0WQi72jY=
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
-github.com/scrouthtv/gosc v0.0.0-20210714103843-eed59e8c679b h1:HXNmJ18Z6GsFlmbrHoTLNoq7v+FAjHJ+uvus58bROC0=
-github.com/scrouthtv/gosc v0.0.0-20210714103843-eed59e8c679b/go.mod h1:5l8JzyX6bzK6XFPnHURRhPzM9EkKdAf8mfXj3q74vaw=

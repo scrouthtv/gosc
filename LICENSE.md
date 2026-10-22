@@ -1,5 +1,6 @@
-Copyright (c) 2013 Chris Howey
-Copyright (c) 2021 Leonard von Hagen
+Copyright (c) 2013 Chris Howey  
+Copyright (c) 2021 Leonard von Hagen  
+Copyright (c) 2026 Pedro F. Albanese
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -12,3 +13,4 @@ ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
 WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
